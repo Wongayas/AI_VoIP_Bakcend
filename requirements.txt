@@ -1,0 +1,13 @@
+livekit
+
+livekit-agents
+opentelemetry-sdk
+livekit-plugins-openai
+livekit-plugins-silero
+python-dotenv
+livekit-api
+livekit-plugins-noise-cancellation
+flask-cors
+uvicorn
+flask[async]
+flask

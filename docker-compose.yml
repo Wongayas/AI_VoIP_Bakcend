@@ -1,0 +1,23 @@
+services:
+  db:
+    container_name: AI_VoIP_User_Credentials
+    image: postgres:17.5
+    environment:
+      POSTGRES_DB: user_credentials
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - db:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - db
+    restart: unless-stopped
+
+networks:
+  db:
+    driver: bridge
+
+volumes:
+  db:

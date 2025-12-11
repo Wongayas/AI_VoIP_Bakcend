@@ -1,13 +1,16 @@
-livekit
+livekit~=1.0.20
 
 livekit-agents
 opentelemetry-sdk
 livekit-plugins-openai
 livekit-plugins-silero
-python-dotenv
+python-dotenv~=1.2.1
 livekit-api
 livekit-plugins-noise-cancellation
 flask-cors
 uvicorn
-flask[async]
+flask[async]~=3.1.2
 flask
+
+bcrypt~=5.0.0
+psycopg2~=2.9.11

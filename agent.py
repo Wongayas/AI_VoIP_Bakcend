@@ -5,6 +5,8 @@ from livekit.plugins import (
     openai,
     noise_cancellation, silero,
 )
+from livekit.api import LiveKitAPI
+from livekit.protocol.room import ListParticipantsRequest
 
 load_dotenv()
 
@@ -19,6 +21,15 @@ server = AgentServer()
 
 @server.rtc_session()
 async def my_agent(ctx: agents.JobContext):
+    await ctx.connect()
+    await ctx.wait_for_participant()
+
+    room = ctx.room
+    async with LiveKitAPI() as lkapi:
+        all_participants = await lkapi.room.list_participants(ListParticipantsRequest(room=room.name))
+        print(all_participants)
+    current_user = [p for p in all_participants.participants if not p.permission.agent][0]
+    print(current_user.name)
     session = AgentSession(
         stt="assemblyai/universal-streaming:en",
         llm="openai/gpt-4.1-mini",
@@ -50,6 +61,7 @@ async def my_agent(ctx: agents.JobContext):
         instructions="Greet the user and offer your assistance. You should start by speaking in English."
     )
     print("said")
+
 
 if __name__ == "__main__":
     agents.cli.run_app(server)

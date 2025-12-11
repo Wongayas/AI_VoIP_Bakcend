@@ -65,6 +65,12 @@ def register():
     data = request.get_json(silent=True) or {}
     print(data)
     email = data["email"]
+
+    cur.execute("SELECT * FROM user_settings where email = %s", (email,))
+    user = cur.fetchone()
+    if user:
+        return jsonify({"error": "Invalid email or password"}), 401
+
     username = data["name"]
     password_salt = bcrypt.gensalt()
     password = data["password"].encode("utf-8")

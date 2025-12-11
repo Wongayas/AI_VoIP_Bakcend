@@ -19,7 +19,7 @@ SETTINGS_DIR = "user_json"
 conn = psycopg2.connect("dbname=user_credentials user=postgres host=localhost password=postgres port=5432")
 
 
-def create_user_json_file(email: str, settings_dict: dict):
+def create_user_json_file(email: str, settings_dict: dict) -> str:
     os.makedirs(SETTINGS_DIR, exist_ok=True)
     file_name = os.path.join(SETTINGS_DIR, f"{email}.json")
     all_data = {"user": {
@@ -29,6 +29,7 @@ def create_user_json_file(email: str, settings_dict: dict):
     with open(file_name, "w", encoding="utf-8") as file:
         json.dump(all_data, file, indent=4)
     print("Saved settings to:", file_name)
+    return file_name
 
 
 @app.route("/login", methods=["POST"])
@@ -50,8 +51,10 @@ def login():
     try:
         with open(json_path, "r", encoding="utf-8") as file:
             user_data = json.load(file)
+            print(user_data)
     except FileNotFoundError:
         return {"user": {"email": email}, "settings": {}}
+    cur.close()
     return jsonify(user_data)
 
 
@@ -62,6 +65,12 @@ def register():
     data = request.get_json(silent=True) or {}
     print(data)
     email = data["email"]
+
+    cur.execute("SELECT * FROM user_settings where email = %s", (email,))
+    user = cur.fetchone()
+    if user:
+        return jsonify({"error": "Invalid email or password"}), 401
+
     username = data["name"]
     password_salt = bcrypt.gensalt()
     password = data["password"].encode("utf-8")
@@ -77,28 +86,31 @@ def register():
 
 @app.route("/setAgentConfig", methods=["POST"])
 def setAgentConfig():
-    print("Hit the setting endpoint")
     data = request.get_json(silent=True) or {}
-    print("raw json:", data)
     room_config = data.get("room_config") or {}
-    print(room_config)
     agents = room_config.get("agents") or []
-    agent = agents[0] if agents else {}
 
-    user_email = data.get("user_email", "user@email")
-    print(user_email)
-    name = agent.get("user_name", "my name")
-    print(name)
-    voice = agent.get("voice", "alloy")
-    print(voice)
-    personality = agent.get("personality", "kind")
-    print(personality)
-    language = agent.get("language", "en")
-    print(language)
-    settings = userSettings(name, voice, personality, language)
-    userSettingsJson = settings.__dict__
-    print(userSettingsJson)
-    create_user_json_file(user_email, userSettingsJson)
+
+    if agents:
+        agent = agents[0]
+        user_email = data.get("user_email", "user@email")
+        name = agent.get("user_name")
+        voice = agent.get("voice","blake")
+        personality = agent.get("personality","casual")
+        language = agent.get("language", "en")
+
+
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM user_settings where email = %s", (user_email,))
+        user = cur.fetchone()
+        settings = userSettings(name, voice, personality, language)
+        userSettingsJson = settings.__dict__
+        print(userSettingsJson)
+        filename = create_user_json_file(user_email, userSettingsJson)
+
+        if not user[5]:
+            cur.execute("UPDATE user_settings SET user_settings_json_path = %s WHERE email = %s", (filename, user_email,))
+
     return "Received"
 
 
